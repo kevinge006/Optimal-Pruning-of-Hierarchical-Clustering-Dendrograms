@@ -16,13 +16,15 @@ To see how the method works in practice, run the example script.
 
 
 📁 Repository Structure
+```
 R/
-├── tree_ops.R        # Tree utilities for dendrogram structure
-├── pruning.R         # Main pruning logic and optimal clustering functions
-├── utils.R           # Helper functions
+├── tree_ops.R     # Tree utilities for dendrogram structure
+├── pruning.R      # Main pruning logic and optimal clustering functions
+├── utils.R        # Helper functions
 
-example.R             # Example script demonstrating usage
-README.md             # This file
+example.R          # Example script demonstrating usage
+README.md          # This file
+```
 
 
 📎 Additional Materials

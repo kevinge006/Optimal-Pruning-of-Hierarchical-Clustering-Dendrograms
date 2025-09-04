@@ -34,52 +34,35 @@ get_added_cost = function(nodes, d, loss_type, membership, use_squared) {
     stop('loss_type must be average or sum')
   }
   
-  # Get unique clusters among the nodes based on current membership
   clusters = unique(membership[nodes])
   if (length(clusters) == 1) {
-    return(0)  # Already merged, no additional cost
+    return(0)
   }
   
-  # Indices of points in the merged cluster
   merged_indices = which(membership %in% clusters)
   if (length(merged_indices) < 2) {
-    return(0)  # Fewer than 2 points, no pairwise cost
+    return(0)
   }
   
-  # Compute total pairwise distance for the merged cluster
-  all_pairs = combn(merged_indices, 2)
-  cost = 0
-  for (p in 1:ncol(all_pairs)) {
-    pair = all_pairs[, p]
-    i = pair[1]
-    j = pair[2]
-    dist_ij = d[i, j]
-    cost = cost + dist_ij  # d[i, j] is already squared if use_squared = TRUE
-  }
+  cost = compute_cluster_cost(merged_indices, d, use_squared)
   
   if (loss_type == "average") {
-    num_pairs = choose(length(merged_indices), 2)
+    num_pairs = length(merged_indices) * (length(merged_indices) - 1) / 2
     if (num_pairs > 0) {
-      cost = cost / num_pairs  # Average over pairs in the merged cluster
+      cost = cost / num_pairs
     }
   }
   
-  # Subtract the cost of the current subclusters
   current_cost = 0
   for (clus in clusters) {
     clus_indices = which(membership == clus)
     if (length(clus_indices) < 2) next
-    clus_pairs = combn(clus_indices, 2)
-    clus_cost = 0
-    for (p in 1:ncol(clus_pairs)) {
-      pair = clus_pairs[, p]
-      i = pair[1]
-      j = pair[2]
-      dist_ij = d[i, j]
-      clus_cost = clus_cost + dist_ij  # d[i, j] is already squared if use_squared = TRUE
-    }
+    
+    clus_cost = compute_cluster_cost(clus_indices, d, use_squared)
+    
     if (loss_type == "average") {
-      clus_cost = clus_cost / choose(length(clus_indices), 2)
+      n_clus = length(clus_indices)
+      clus_cost = clus_cost / (n_clus * (n_clus - 1) / 2)
     }
     current_cost = current_cost + clus_cost
   }
@@ -91,7 +74,7 @@ get_added_cost = function(nodes, d, loss_type, membership, use_squared) {
 # Record initial cost info for all internal nodes (before any cuts)
 get_all_costs = function(offspr_info, d, loss_type, membership, use_squared) {
   costs_lst = numeric(length(offspr_info))
-  for (i in 1:length(offspr_info)) {
+  for (i in seq_along(offspr_info)) {
     nodes = offspr_info[[i]]
     cost = get_added_cost(nodes, d, loss_type, membership, use_squared)
     costs_lst[i] = cost

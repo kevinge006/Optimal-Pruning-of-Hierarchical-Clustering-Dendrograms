@@ -1,7 +1,7 @@
 # Compare added cost per node of different cut choices
 choose_cut = function(offspr_info, d, loss_type, cutted_node_lst, merge_info, membership, use_squared) {
   costs_pn_lst = numeric(length(offspr_info))
-  for (i in 1:length(offspr_info)) {
+  for (i in seq_along(offspr_info)) {
     if (i %in% cutted_node_lst) {
       costs_pn_lst[i] = Inf
       next
@@ -45,8 +45,8 @@ get_membership = function(best_cut, offspr_info, membership) {
 # Produce a sequence of memberships
 get_pruned_seq = function(hc, data, loss_type, use_squared) {
   n = nrow(data)
-  # Compute the distance matrix
-  d = pairwise_dist(data, use_squared)  # This returns a matrix
+  
+  d = pairwise_dist(data, use_squared)
   merge_info = hc$merge
   offspr_out = get_offspr_info(hc)
   merge_info = offspr_out$merge_info
@@ -58,8 +58,10 @@ get_pruned_seq = function(hc, data, loss_type, use_squared) {
   cut_lst = list(0)
   cutted_node_lst = c()
   step = 1
+  
   while (length(cutted_node_lst) == 0 || max(cutted_node_lst) < (n - 1)) {
     step = step + 1
+    
     cut_info = choose_cut(offspr_info, d, loss_type, cutted_node_lst, merge_info, membership, use_squared)
     best_cut = cut_info$best_cut
     if (is.null(best_cut)) break
@@ -68,19 +70,79 @@ get_pruned_seq = function(hc, data, loss_type, use_squared) {
     msp_lst[[step]] = index_from_one(membership)
     cut_lst[[step - 1]] = best_cut
   }
-  return(list(data = data, membership_sequence = msp_lst, merge_steps = cut_lst)) #return x_loc_lst to record plot labels positions
+  return(list(data = data, membership_sequence = msp_lst, merge_steps = cut_lst))
 }
 
 # Return membership for k clusters
-k_clus_membership = function(hc, data, k, loss_type, use_squared) {
-  prune_info = get_pruned_seq(hc, data, loss_type = loss_type, use_squared = use_squared)
+k_clus_membership = function(hc, data, k, loss_type, use_squared, k_range = NULL, quiet = FALSE) {
+  # Check if k is valid
+  if (k > nrow(data)) {
+    stop(paste("k =", k, "is too large. Maximum possible k for", nrow(data), "data points is", nrow(data)))
+  }
+  if (k < 1) {
+    stop("k must be at least 1")
+  }
+  
+  if (!is.null(k_range)) {
+    # If k_range is specified, limit the sequence computation
+    max_k = max(k_range)
+    prune_info = get_pruned_seq_limited(hc, data, loss_type = loss_type, use_squared = use_squared, max_k = max_k)
+  } else {
+    prune_info = get_pruned_seq(hc, data, loss_type = loss_type, use_squared = use_squared)
+  }
+  
   membership_seq = prune_info$membership_sequence
   seq_msp_len = sapply(lapply(membership_seq, unique), length)
+  
   while (!k %in% seq_msp_len) {
-    print(paste("There is no subtree with", k, "leaves when using optimal pruning"))
+    if (!quiet) {
+      print(paste("There is no subtree with", k, "leaves when using optimal pruning"))
+      print(paste("k is increased to", k + 1))
+    }
     k = k + 1
-    print(paste("k is increased to", k))
   }
   membership = membership_seq[[which(seq_msp_len == k)]]
   return(list(cluster = membership))
+}
+
+# Limited version for efficiency when k_range is specified
+get_pruned_seq_limited = function(hc, data, loss_type, use_squared, max_k) {
+  n = nrow(data)
+  
+  # Check if max_k is valid
+  if (k > nrow(data)) {
+    stop(paste("k =", k, "is too large. Maximum possible k for", nrow(data), "data points is", nrow(data)))
+  }
+  if (max_k < 1) {
+    stop("max_k must be at least 1")
+  }
+  
+  d = pairwise_dist(data, use_squared)
+  merge_info = hc$merge
+  offspr_out = get_offspr_info(hc)
+  merge_info = offspr_out$merge_info
+  offspr_info = offspr_out$offspr_info
+  membership = 1:n
+  msp_lst = list()
+  msp_lst[[1]] = membership
+  cut_lst = list(0)
+  cutted_node_lst = c()
+  step = 1
+  
+  while (length(cutted_node_lst) == 0 || max(cutted_node_lst) < (n - 1)) {
+    step = step + 1
+    
+    # Early stopping if we have enough clusters
+    current_k = length(unique(membership))
+    if (current_k >= max_k) break
+    
+    cut_info = choose_cut(offspr_info, d, loss_type, cutted_node_lst, merge_info, membership, use_squared)
+    best_cut = cut_info$best_cut
+    if (is.null(best_cut)) break
+    cutted_node_lst = cut_info$cutted_node_lst
+    membership = get_membership(best_cut, offspr_info, membership)
+    msp_lst[[step]] = index_from_one(membership)
+    cut_lst[[step - 1]] = best_cut
+  }
+  return(list(data = data, membership_sequence = msp_lst, merge_steps = cut_lst))
 }

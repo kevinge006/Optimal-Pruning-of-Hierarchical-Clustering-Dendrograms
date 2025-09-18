@@ -6,7 +6,7 @@ Given a hierarchical clustering dendrogram, our method finds the optimal cluster
 ## Citation
 If you use this method in your research, please cite:
 
-Ge, J. (2025). Optimal pruning of hierarchical clustering dendrograms. *Communications in Statistics - Theory and Methods*. https://doi.org/10.1080/03610926.2025.2543191
+Ge, Jiacheng & Tibshirani, Robert (2025). Optimal pruning of hierarchical clustering dendrograms. *Communications in Statistics - Theory and Methods*. https://doi.org/10.1080/03610926.2025.2543191
 
 ## How to Use
 To use our method to obtain the optimal clustering:
@@ -25,7 +25,7 @@ R/
 ├── tree_ops.R     # Tree utilities for dendrogram structure
 ├── pruning.R      # Main pruning logic and optimal clustering functions
 ├── utils.R        # Helper functions for distance computation
-├── gap_test.R     # Gap statistic functionality for optimal k selection
+├── gap_test.R     # Gap statistic (not this paper's contribution) functionality for optimal k selection
 
 example.R          # Examples demonstrating functionality
 README.md          # This file
@@ -33,7 +33,6 @@ README.md          # This file
 
 ## Dependencies
 
-**Core Functionality**: Base R only
 **Gap Statistic**: Requires `cluster` package (`install.packages("cluster")`)
 
 ## Contact
